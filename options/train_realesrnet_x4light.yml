@@ -80,12 +80,15 @@ datasets:
 
 # network structures
 network_g:
-  type: SeparableRRDBNet
+  type: BSRN
   num_in_ch: 3
   num_out_ch: 3
-  num_feat: 16
-  num_block: 3
-  num_grow_ch: 16
+  num_feat: 28
+  num_block: 8
+  upscale: 4
+  conv: DepthWiseConv
+  upsampler: pixelshuffledirect
+  p: 0.25
 
 # path
 path:
