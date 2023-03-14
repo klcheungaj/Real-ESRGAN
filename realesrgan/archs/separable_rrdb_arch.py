@@ -36,7 +36,7 @@ class ResidualDenseBlock(nn.Module):
         x4 = self.lrelu(self.conv4(torch.cat((x, x1, x2, x3), 1)))
         x5 = self.conv5(torch.cat((x, x1, x2, x3, x4), 1))
         # Empirically, we use 0.2 to scale the residual for better performance
-        return x5 * 0.2 + x
+        return x5 * 0.25 + x
 
 class RRDB(nn.Module):
     """Residual in Residual Dense Block.
@@ -59,7 +59,7 @@ class RRDB(nn.Module):
         out = self.rdb2(out)
         out = self.rdb3(out)
         # Empirically, we use 0.2 to scale the residual for better performance
-        return out * 0.2 + x
+        return out * 0.25 + x
 
 @ARCH_REGISTRY.register()
 class SeparableRRDBNet(nn.Module):
