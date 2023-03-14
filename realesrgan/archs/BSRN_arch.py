@@ -170,9 +170,11 @@ class CCALayer(nn.Module):
         self.avg_pool = nn.AdaptiveAvgPool2d(1)
         self.conv_du = nn.Sequential(
             nn.Conv2d(channel, channel // reduction, 1, padding=0, bias=True),
-            nn.ReLU6(inplace=True),
+            nn.ReLU(inplace=True),
+            # nn.ReLU6(inplace=True),
             nn.Conv2d(channel // reduction, channel, 1, padding=0, bias=True),
-            nn.ReLU6()
+            nn.Sigmoid()
+            # nn.ReLU6()
         )
 
     def forward(self, x):
@@ -193,8 +195,9 @@ class ChannelAttention(nn.Module):
         super(ChannelAttention, self).__init__()
         self.attention = nn.Sequential(
             nn.AdaptiveAvgPool2d(1), nn.Conv2d(num_feat, num_feat // squeeze_factor, 1, padding=0),
-            nn.ReLU6(inplace=True), nn.Conv2d(num_feat // squeeze_factor, num_feat, 1, padding=0),
-            nn.ReLU6())
+            nn.ReLU(inplace=True), nn.Conv2d(num_feat // squeeze_factor, num_feat, 1, padding=0),
+            nn.Sigmoid())
+            # nn.ReLU6())
 
     def forward(self, x):
         y = self.attention(x)
@@ -216,7 +219,8 @@ class ESA(nn.Module):
         self.conv3 = conv(f, f, kernel_size=3, **BSConvS_kwargs)
         self.conv3_ = conv(f, f, kernel_size=3, **BSConvS_kwargs)
         self.conv4 = nn.Conv2d(f, num_feat, 1)
-        self.sigmoid = nn.ReLU6()
+        # self.sigmoid = nn.ReLU6()
+        self.sigmoid = nn.Sigmoid()
         self.lrelu = nn.LeakyReLU(negative_slope=0.25, inplace=False)
 
     def forward(self, input):
@@ -226,7 +230,8 @@ class ESA(nn.Module):
         v_range = self.lrelu(self.conv_max(v_max))
         c3 = self.lrelu(self.conv3(v_range))
         c3 = self.conv3_(c3)
-        c3 = F.interpolate(c3, (input.size(2), input.size(3)), mode='nearest')
+        # c3 = F.interpolate(c3, (input.size(2), input.size(3)), mode='nearest')
+        c3 = F.interpolate(c3, (input.size(2), input.size(3)), mode='bilinear', align_corners=False)
         cf = self.conv_f(c1_)
         c4 = self.conv4((c3 + cf))
         m = self.sigmoid(c4)
@@ -256,9 +261,9 @@ class ESDB(nn.Module):
 
         self.c5 = nn.Conv2d(self.dc * 4, in_channels, 1)
         self.esa = ESA(in_channels, conv)
-        # self.cca = CCALayer(in_channels)
-        self.cw = nn.Parameter(torch.normal(mean=1, std=0.2, size=(1, in_channels)))
-        self.conv_out = nn.Linear(in_channels, out_channels)
+        self.cca = CCALayer(in_channels)
+        # self.cw = nn.Parameter(torch.normal(mean=1, std=0.2, size=(1, in_channels)))
+        # self.conv_out = nn.Linear(in_channels, out_channels)
 
     def forward(self, input):
 
@@ -279,9 +284,11 @@ class ESDB(nn.Module):
         out = torch.cat([distilled_c1, distilled_c2, distilled_c3, r_c4], dim=1)
         out = self.c5(out)
         out_fused = self.esa(out)
-        out_fused = out_fused.permute(0, 2, 3, 1) * self.cw
-        out_fused = self.conv_out(out_fused)
-        return out_fused.permute(0, 3, 1, 2) + input
+        out_fused = self.cca(out_fused)
+        return out_fused + input
+        # out_fused = out_fused.permute(0, 2, 3, 1) * self.cw
+        # out_fused = self.conv_out(out_fused)
+        # return out_fused.permute(0, 3, 1, 2) + input
 
 
 def make_layer(block, n_layers):
