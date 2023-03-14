@@ -88,7 +88,7 @@ network_g:
   num_feat: 48
   num_block: 20
   num_grow_ch: 24
-  scale: 2
+  scale: 4
 
 # path
 path:
