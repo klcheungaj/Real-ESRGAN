@@ -22,7 +22,7 @@ jpeg_range: [30, 95]
 
 # the second degradation process
 second_blur_prob: 0.8
-resize_prob2: [0.3, 0.4, 0.3]  # up, down, keep
+resize_prob2: [0.25, 0.5, 0.3]  # up, down, keep
 resize_range2: [0.3, 1.2]
 gaussian_noise_prob2: 0.5
 noise_range2: [1, 25]
@@ -31,7 +31,7 @@ gray_noise_prob2: 0.4
 jpeg_range2: [30, 95]
 
 gt_size: 256
-queue_size: 360
+queue_size: 480
 
 # dataset and data loader settings
 datasets:
@@ -68,7 +68,7 @@ datasets:
     # data loader
     use_shuffle: true
     num_worker_per_gpu: 12
-    batch_size_per_gpu: 12
+    batch_size_per_gpu: 24
     dataset_enlarge_ratio: 1
     prefetch_mode: cuda
     pin_memory: true
@@ -87,9 +87,9 @@ network_g:
   type: SeparableRRDBNet
   num_in_ch: 3
   num_out_ch: 3
-  num_feat: 48
-  num_block: 20
-  num_grow_ch: 24
+  num_feat: 32
+  num_block: 5
+  num_grow_ch: 16
   scale: 4
 
 network_d:
@@ -104,6 +104,9 @@ path:
   pretrain_network_g: experiments/pretrained_models/net_g.pth
   param_key_g: params_ema
   strict_load_g: true
+  # pretrain_network_d: experiments/pretrained_models/RealESRGAN_x4plus_netD.pth
+  # param_key_d: params
+  # strict_load_d: true
   resume_state: ~
 
 # training settings
@@ -122,15 +125,15 @@ train:
 
   scheduler:
     type: MultiStepLR
-    milestones: [400000]
+    milestones: [500000]
     gamma: 0.5
 
-  total_iter: 400000
+  total_iter: 500000
   warmup_iter: -1  # no warm up
 
   # losses
   pixel_opt:
-    type: MSELoss
+    type: L1Loss
     loss_weight: 1.0
     reduction: mean
   # perceptual loss (content and style losses)
@@ -163,12 +166,16 @@ train:
 # Uncomment these for validation
 # validation settings
 val:
-  val_freq: !!float 5e3
+  val_freq: !!float 1e3
   save_img: True
 
   metrics:
     psnr: # metric name
       type: calculate_psnr
+      crop_border: 4
+      test_y_channel: false
+    ssim:
+      type: calculate_ssim
       crop_border: 4
       test_y_channel: false
 

@@ -1,5 +1,5 @@
 # general settings
-name: train_RealESRNetx4light_1000k_B12G4
+name: train_SwinIRx4
 model_type: RealESRNetModel
 scale: 4
 num_gpu: auto  # auto: can infer from your visible devices automatically. official: 4 GPUs
@@ -80,17 +80,22 @@ datasets:
 
 # network structures
 network_g:
-  type: SeparableRRDBNet
-  num_in_ch: 3
-  num_out_ch: 3
-  num_feat: 32
-  num_block: 5
-  num_grow_ch: 16
-  scale: 4
+  type: mySwinIR
+  upscale: 4
+  in_chans: 3
+  img_size: 64
+  window_size: 8
+  img_range: 1.0
+  depths: [6, 6]
+  embed_dim: 96
+  num_heads: [6, 6]
+  mlp_ratio: 2
+  upsampler: pixelshuffledirect
+  resi_connection: 1conv
 
 # path
 path:
-  pretrain_network_g:
+  pretrain_network_g: experiments/pretrained_models/net_g.pth
   param_key_g: params_ema
   strict_load_g: true
   resume_state: ~
@@ -100,7 +105,7 @@ train:
   ema_decay: 0.999
   optim_g:
     type: Adam
-    lr: !!float 5e-4
+    lr: !!float 2e-4
     weight_decay: 0
     betas: [0.9, 0.99]
 
